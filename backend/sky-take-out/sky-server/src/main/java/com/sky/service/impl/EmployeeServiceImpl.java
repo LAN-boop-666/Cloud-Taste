@@ -95,6 +95,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     /**
      * 员工分页查询
+     *
      * @param employeePageQueryDTO
      * @return
      */
@@ -104,5 +105,56 @@ public class EmployeeServiceImpl implements EmployeeService {
         Page<Employee> page = employeeMapper.pageQuery(employeePageQueryDTO);
 
         return new PageResult(page.getTotal(), page.getResult());
+    }
+
+    /**
+     * 根据id修改员工状态
+     *
+     * @param status
+     * @param id
+     */
+    @Override
+    public void startorstop(Integer status, Long id) {
+        //update employee set status = ? where id = ?
+
+        //        Employee employee = new Employee();
+        //        employee.setId(id);
+        //        employee.setStatus(status);
+
+        Employee employee = Employee.builder()
+                .id(id)
+                .status(status)
+                .build();
+
+        employeeMapper.update(employee);
+    }
+
+    /**
+     * 根据id查询员工
+     * @param id
+     * @return
+     */
+    @Override
+    public Employee getById(Long id) {
+        Employee employee = employeeMapper.getById(id);
+        //2. 脱敏：把真实密码替换成****，做脱敏
+        employee.setPassword("****");
+        return employee;
+    }
+
+    /**
+     * 根据id修改员工
+     * @param employeeDTO
+     */
+    @Override
+    public void update(EmployeeDTO employeeDTO) {
+        //1. 创建员工实体对象，准备接收前端传入的数据
+        Employee employee = new Employee();
+        BeanUtils.copyProperties(employeeDTO, employee);
+        //2. 设置更新时间和更新人
+        employee.setUpdateTime(LocalDateTime.now());
+        employee.setUpdateUser(BaseContext.getCurrentId());
+        //3. 调用持久层方法更新员工信息
+        employeeMapper.update(employee);
     }
 }
