@@ -1,0 +1,8 @@
+sky:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    host: ${CLOUD_TASTE_DB_HOST:localhost}
+    port: ${CLOUD_TASTE_DB_PORT:3306}
+    database: ${CLOUD_TASTE_DB_NAME:cloud_taste}
+    username: ${CLOUD_TASTE_DB_USERNAME:root}
+    password: ${CLOUD_TASTE_DB_PASSWORD:}

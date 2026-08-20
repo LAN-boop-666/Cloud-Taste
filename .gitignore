@@ -1,0 +1,35 @@
+# Java / Maven
+**/target/
+**/.idea/
+*.iml
+.maven-repository/
+.build-logs/
+
+# Local secrets and runtime files
+**/application-local.yml
+**/application-local.yaml
+*.local
+*.log
+.runtime/
+
+# Node / Vue
+**/node_modules/
+**/dist/
+**/.cache/
+**/.temp/
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+
+# Temporary course import area
+.import/
+
+# Project-local legacy frontend runtime
+.tools/
+**/node_modules.failed-*/
+
+# Course materials kept for local study only
+admin-dist/
+docs/api/
+docs/prototype/

@@ -1,0 +1,12 @@
+# Copy this file to application-local.yml and fill in local-only values.
+# application-local.yml is ignored by Git and must never be committed.
+
+sky:
+  datasource:
+    host: 127.0.0.1
+    port: 3306
+    database: cloud_taste
+    username: root
+    password: ""
+  jwt:
+    admin-secret-key: cloud-taste-local-jwt-change-me
