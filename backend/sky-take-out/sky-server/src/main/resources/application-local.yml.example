@@ -10,8 +10,3 @@ sky:
     password: ""
   jwt:
     admin-secret-key: cloud-taste-local-jwt-change-me
-  alioss:
-    endpoint: ""
-    access-key-id: ""
-    access-key-secret: ""
-    bucket-name: ""
