@@ -6,3 +6,8 @@ sky:
     database: ${CLOUD_TASTE_DB_NAME:cloud_taste}
     username: ${CLOUD_TASTE_DB_USERNAME:root}
     password: ${CLOUD_TASTE_DB_PASSWORD:}
+  alioss:
+    endpoint: ${CLOUD_TASTE_OSS_ENDPOINT:}
+    access-key-id: ${CLOUD_TASTE_OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${CLOUD_TASTE_OSS_ACCESS_KEY_SECRET:}
+    bucket-name: ${CLOUD_TASTE_OSS_BUCKET_NAME:}

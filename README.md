@@ -114,9 +114,11 @@ sky-server    Controller、Service、Mapper、配置和启动类
 - 员工登录、JWT 身份验证和员工管理基础功能。
 - 分类管理的分页、新增、修改、启用、禁用、删除和按类型查询。
 - 分类删除前检查是否关联菜品或套餐。
+- 通用文件上传接口及阿里云 OSS 配置入口。
+- 新增菜品，同时保存菜品对应的口味数据。
 - 管理后台、Nginx、MySQL 和后端的本地运行环境。
 
-当前分类模块只为删除检查加入了 `DishMapper` 和 `SetmealMapper`，不代表菜品管理、套餐管理已经完整实现。
+当前只完成了菜品新增，菜品分页、修改、删除和启停等功能仍应继续跟随课程实现；套餐管理尚未完整实现。
 
 ## 六、本地配置和提交安全
 
@@ -128,6 +130,15 @@ backend\sky-take-out\sky-server\src\main\resources\application-local.yml
 
 这个文件已被 `.gitignore` 忽略。可以在本机填写数据库密码，但不要强制添加或上传。项目也支持 `CLOUD_TASTE_DB_PASSWORD` 等环境变量。
 
+OSS 的 endpoint、AccessKey 和 bucket 也只写入 `application-local.yml`，或使用下面的环境变量：
+
+```text
+CLOUD_TASTE_OSS_ENDPOINT
+CLOUD_TASTE_OSS_ACCESS_KEY_ID
+CLOUD_TASTE_OSS_ACCESS_KEY_SECRET
+CLOUD_TASTE_OSS_BUCKET_NAME
+```
+
 提交前至少执行：
 
 ```powershell
@@ -137,6 +148,20 @@ git status
 
 不要提交 `application-local.yml`、`node_modules`、`target`、`.tools` 或 `.maven-repository`。
 
+日常开发统一使用 `dev` 分支：
+
+```powershell
+cd D:\workspace\cloud-taste
+git switch dev
+git pull --ff-only origin dev
+git add -A
+git status
+git commit -m "说明本次完成的功能"
+git push origin dev
+```
+
+提交前必须先看一次 `git status`，确认列表里没有本机配置、构建产物或 IDE 文件。需要合并到受保护的 `master` 时，在 GitHub 创建从 `dev` 到 `master` 的 Pull Request，不直接推送 `master`。
+
 ## 七、详细文档入口
 
 - [完整环境运行指南](docs/环境运行指南.md)：IDEA、Nginx、前端源码和 PowerShell 的详细操作。
@@ -145,6 +170,7 @@ git status
 - [管理端接口文档](docs/api/admin-api.html)：课程管理端 API 文档。
 - [学习进度](docs/learning/learning-progress.md)：课程学习记录。
 - [项目路线](docs/learning/project-roadmap.md)：课程阶段和后期扩展方向。
+- [Git 仓库恢复记录](docs/Git仓库恢复记录.md)：本次分支、历史和配置污染问题的原因及后续规则。
 
 ## 八、常见问题
 

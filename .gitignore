@@ -8,8 +8,12 @@
 # Local secrets and runtime files
 **/application-local.yml
 **/application-local.yaml
+.env
+**/.env.local
+**/.env.*.local
 *.local
 *.log
+**/report.*.json
 .runtime/
 
 # Node / Vue
