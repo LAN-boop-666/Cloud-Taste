@@ -1,58 +1,170 @@
 # 云味餐厅 CloudTaste
 
-这是 LAN 的餐饮点餐系统学习工程，以 B 站黑马程序员《苍穹外卖》课程为学习主线，并在关键节点补充现代开发习惯。
+基于黑马程序员《苍穹外卖》课程学习的餐饮管理项目。前期保持课程的模块、包名、接口和运行方式，完成课程后再进行原创扩展。
 
-## 目录
+> **从这里开始：** IDEA 只打开 `D:\workspace\cloud-taste\backend\sky-take-out`，运行 `SkyApplication.java`；管理后台使用 Nginx，浏览器访问 `http://localhost/`。
 
-- `backend/sky-take-out`：Day01 后端初始工程
-- `admin-web/project-sky-admin-vue-ts`：管理端 Vue 源码，暂按课程版本保留
-- `admin-dist/nginx-1.20.2`：课程提供的可运行管理端静态文件和 Nginx
-- `database/cloud_taste.sql`：本地学习数据库脚本
-- `docs/api`：接口文档
-- `docs/prototype`：产品原型压缩包
-- `docs/learning`：项目实战任务
-- `docs/环境运行指南.md`：IDEA、VS Code、PowerShell 和各服务运行方式
-- `docs/环境安装记录.md`：本项目安装路径、版本和清理记录
+## 一、项目怎么打开
 
-## 学习约定
+| 要做什么 | 使用工具 | 打开位置 |
+| --- | --- | --- |
+| 编写、运行 Java 后端 | IDEA | `D:\workspace\cloud-taste\backend\sky-take-out` |
+| 直接运行课程管理后台 | 文件资源管理器 | `D:\workspace\cloud-taste\admin-dist\nginx-1.20.2` |
+| 修改管理后台源码 | VS Code | `D:\workspace\cloud-taste\admin-web\project-sky-admin-vue-ts` |
+| 查看和管理数据库 | DataGrip | 数据库 `cloud_taste`，MySQL 端口 `3306` |
+| 查看整个仓库 | IDEA、VS Code 或文件资源管理器 | `D:\workspace\cloud-taste` |
 
-第一遍以理解需求、接口、数据库、分层结构、事务、缓存和订单流程为主。`com.sky`、`sky-common`、`sky-pojo`、`sky-server`、表名和接口路径暂时保留，便于逐节对照视频。
+IDEA 中的后端启动类：
 
-课程最终工程只留在课程资料目录中，不复制到本项目作为实现答案。遇到“导入代码”的章节，先阅读需求和接口，再逐段完成并验证。
+```text
+sky-server\src\main\java\com\sky\SkyApplication.java
+```
 
-## 本地配置
+不要在 IDEA 中只打开 `sky-server`，也不要把整个 `cloud-taste` 当作 Maven 后端工程导入。课程后端是由 `sky-common`、`sky-pojo`、`sky-server` 组成的多模块 Maven 项目。
 
-后端默认读取 `application-dev.yml` 和本机专用的 `application-local.yml`。
-首次使用时，将
-`backend/sky-take-out/sky-server/src/main/resources/application-local.yml.example`
-复制为 `application-local.yml`，再填写自己的数据库密码。`application-local.yml`
-已被 `.gitignore` 忽略，不会提交到 Git。
+## 二、每次上课前怎么启动
 
-数据库配置也支持以下环境变量，环境变量优先级更高：
+完整运行顺序：
 
-- `CLOUD_TASTE_DB_HOST`，默认 `localhost`
-- `CLOUD_TASTE_DB_PORT`，默认 `3306`
-- `CLOUD_TASTE_DB_NAME`，默认 `cloud_taste`
-- `CLOUD_TASTE_DB_USERNAME`，默认 `root`
-- `CLOUD_TASTE_DB_PASSWORD`，无默认值
-- `CLOUD_TASTE_JWT_SECRET`，默认仅用于本机学习的占位值
+```text
+MySQL -> Spring Boot 后端 -> Nginx 管理后台
+```
 
-不要把真实密码、JWT 密钥、微信配置或 OSS 配置写入 Git、接口文档或聊天记录。
+### 方式 A：按照黑马课程操作
 
-## 构建说明
+1. 确认 Windows 服务中的 `MySQL80` 已启动。
+2. IDEA 打开 `D:\workspace\cloud-taste\backend\sky-take-out`。
+3. 运行 `SkyApplication.java`，看到后端启动成功并监听 `8080`。
+4. 打开 `D:\workspace\cloud-taste\admin-dist\nginx-1.20.2`。
+5. 双击 `nginx.exe`，然后访问 `http://localhost/`。
 
-IDEA 使用 Bundled Maven 3.9.6，Java 使用 17。命令行构建优先使用后端目录中的 Maven Wrapper（Maven 3.9.6），不依赖全局 `mvn`。
+页面可以打开但一直无法登录，通常表示只启动了 Nginx，后端或 MySQL 没有启动。
 
-管理端源码是 Vue 2 / Vue CLI 3 工程。第一阶段优先使用 `admin-dist` 的成品，源码编译放到前端章节单独处理。
+### 方式 B：使用项目脚本
 
-## 本地运行顺序
+在两个 PowerShell 窗口中分别执行：
 
-1. 在 PowerShell 中设置 `CLOUD_TASTE_DB_PASSWORD`，或运行 `scripts/init-database.ps1` 按提示输入密码。
-2. 运行 `scripts/build-backend.ps1` 构建后端。
-3. 运行 `scripts/start-backend.ps1` 启动后端，默认端口 `8080`。
-4. 另开终端运行 `scripts/start-nginx.ps1`，访问 `http://127.0.0.1/`。
-5. 后端和数据库都启动后运行 `scripts/test-day01.ps1`。
+```powershell
+cd D:\workspace\cloud-taste
+.\scripts\start-backend.ps1
+```
 
-停止前端代理：`scripts/stop-nginx.ps1`。
+```powershell
+cd D:\workspace\cloud-taste
+.\scripts\start-nginx.ps1
+```
 
-首次数据库导入前请确认 `cloud_taste` 尚不存在。初始化脚本发现数据库已存在时会停止，不会覆盖表数据。
+停止 Nginx：
+
+```powershell
+cd D:\workspace\cloud-taste
+.\scripts\stop-nginx.ps1
+```
+
+## 三、启动后怎么验收
+
+| 检查内容 | 地址或方法 | 正常现象 |
+| --- | --- | --- |
+| 管理后台 | `http://localhost/` | 出现登录页面 |
+| 后端接口文档 | `http://127.0.0.1:8080/doc.html` | 出现 Swagger/Knife4j 文档 |
+| 后端端口 | `http://127.0.0.1:8080` | 后端进程监听 `8080` |
+| 数据库 | DataGrip 连接 `cloud_taste` | 可以看到课程基础表 |
+| 完整链路 | 登录后台并打开分类管理 | 可以查询、新增、修改、启停和删除分类 |
+
+Apifox 调试真实后端时使用：
+
+```text
+直连 Spring Boot：http://127.0.0.1:8080/admin/...
+经过 Nginx：http://127.0.0.1/api/...
+```
+
+不要使用带有 `4523/m1/...` 的 Mock 地址判断后端是否成功。HTTP 状态为 `200` 也不等于业务成功，还要检查响应体中的 `code` 是否为 `1`。
+
+## 四、目录是做什么的
+
+```text
+cloud-taste
+├─ backend
+│  └─ sky-take-out                 Java 后端，IDEA 打开这里
+├─ admin-dist
+│  └─ nginx-1.20.2                 课程打包版前端和 Nginx
+├─ admin-web
+│  └─ project-sky-admin-vue-ts     Vue 2 管理端源码
+├─ database
+│  └─ cloud_taste.sql              数据库初始化脚本
+├─ docs                            详细资料、接口文档和学习记录
+├─ scripts                         启动、构建和检查脚本
+└─ README.md                       项目总入口，也就是当前文件
+```
+
+后端模块：
+
+```text
+sky-common    公共常量、异常、工具和统一返回结果
+sky-pojo      Entity、DTO、VO 等数据对象
+sky-server    Controller、Service、Mapper、配置和启动类
+```
+
+`admin-dist` 是可以直接运行的课程成品前端；`admin-web` 是需要 Node 环境的前端源码。只是跟课验证后端时，优先使用 `admin-dist`。
+
+## 五、当前学习进度
+
+已具备：
+
+- 员工登录、JWT 身份验证和员工管理基础功能。
+- 分类管理的分页、新增、修改、启用、禁用、删除和按类型查询。
+- 分类删除前检查是否关联菜品或套餐。
+- 管理后台、Nginx、MySQL 和后端的本地运行环境。
+
+当前分类模块只为删除检查加入了 `DishMapper` 和 `SetmealMapper`，不代表菜品管理、套餐管理已经完整实现。
+
+## 六、本地配置和提交安全
+
+本机数据库配置位于：
+
+```text
+backend\sky-take-out\sky-server\src\main\resources\application-local.yml
+```
+
+这个文件已被 `.gitignore` 忽略。可以在本机填写数据库密码，但不要强制添加或上传。项目也支持 `CLOUD_TASTE_DB_PASSWORD` 等环境变量。
+
+提交前至少执行：
+
+```powershell
+cd D:\workspace\cloud-taste
+git status
+```
+
+不要提交 `application-local.yml`、`node_modules`、`target`、`.tools` 或 `.maven-repository`。
+
+## 七、详细文档入口
+
+- [完整环境运行指南](docs/环境运行指南.md)：IDEA、Nginx、前端源码和 PowerShell 的详细操作。
+- [环境安装记录](docs/环境安装记录.md)：已安装版本、路径、占用和后续清理依据。
+- [数据库设计](docs/database-design.md)：数据库表和字段说明。
+- [管理端接口文档](docs/api/admin-api.html)：课程管理端 API 文档。
+- [学习进度](docs/learning/learning-progress.md)：课程学习记录。
+- [项目路线](docs/learning/project-roadmap.md)：课程阶段和后期扩展方向。
+
+## 八、常见问题
+
+### 前端页面能打开，但登录一直加载
+
+Nginx 只负责页面和接口转发。还需要启动 `SkyApplication.java`，并确保 MySQL 正常运行、数据库密码正确。
+
+### IDEA 的 GitHub 拉取请求页面提示受限
+
+这是 IDEA GitHub 插件或网络访问 GitHub API 的问题，不代表本地 Git 仓库损坏。普通提交、拉取和推送请使用 IDEA 的 Git 菜单或项目根目录中的 Git 命令。
+
+### 只想看前端
+
+双击 `admin-dist\nginx-1.20.2\nginx.exe`，访问 `http://localhost/`。页面可以浏览，但登录和数据操作仍然需要后端。
+
+### 想运行前端源码
+
+```powershell
+cd D:\workspace\cloud-taste
+.\scripts\start-admin-dev.ps1
+```
+
+默认访问 `http://127.0.0.1:8889/`。该脚本使用项目内 Node 12，不会替换系统 Node。
