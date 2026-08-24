@@ -12,6 +12,7 @@ import com.sky.exception.DeletionNotAllowedException;
 import com.sky.mapper.DishFlavorMapper;
 import com.sky.mapper.DishMapper;
 import com.sky.mapper.SetmealDishMapper;
+import com.sky.mapper.SetmealMapper;
 import com.sky.result.PageResult;
 import com.sky.service.DishService;
 import com.sky.vo.DishVO;
@@ -22,6 +23,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,6 +33,9 @@ public class DishServiceImpl implements DishService {
     private DishMapper dishMapper;
     @Autowired
     private SetmealDishMapper setmealDishMapper;
+
+    @Autowired
+    private SetmealMapper setmealMapper;
 
     @Autowired
     private DishFlavorMapper dishFlavorMapper;
@@ -169,5 +174,18 @@ public class DishServiceImpl implements DishService {
                 .status(StatusConstant.ENABLE)
                 .build();
         return dishMapper.list(dish);
+    }
+
+    @Override
+    public List<DishVO> listWithFlavor(Dish dish) {
+        List<Dish> dishList = dishMapper.list(dish);
+        List<DishVO> dishVOList = new ArrayList<>();
+        for (Dish item : dishList) {
+            DishVO dishVO = new DishVO();
+            BeanUtils.copyProperties(item, dishVO);
+            dishVO.setFlavors(dishFlavorMapper.getByDishId(item.getId()));
+            dishVOList.add(dishVO);
+        }
+        return dishVOList;
     }
 }
