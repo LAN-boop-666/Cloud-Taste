@@ -198,18 +198,21 @@ public class DishServiceImpl implements DishService {
      */
     @Transactional
     public void startOrStop(Integer status, Long id) {
+        //根据id修改菜品状态
         Dish dish = Dish.builder()
                 .id(id)
                 .status(status)
                 .build();
         dishMapper.update(dish);
 
+        // 如果是停售操作，还需要将包含当前菜品的套餐也停售
         if (status == StatusConstant.DISABLE) {
-            // 如果是停售操作，还需要将包含当前菜品的套餐也停售
+            // 获取包含当前菜品的套餐Ids
             List<Long> dishIds = new ArrayList<>();
             dishIds.add(id);
             // select setmeal_id from setmeal_dish where dish_id in (?,?,?)
             List<Long> setmealIds = setmealDishMapper.getSetmealIdsByDishIds(dishIds);
+            // 将获取到的套餐Ids进行停售
             if (setmealIds != null && setmealIds.size() > 0) {
                 for (Long setmealId : setmealIds) {
                     Setmeal setmeal = Setmeal.builder()
