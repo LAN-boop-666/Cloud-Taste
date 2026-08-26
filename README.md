@@ -164,6 +164,7 @@ git status
 - [数据库设计](docs/database-design.md)：数据库表和字段说明。
 - [管理端接口文档](docs/api/admin-api.html)：课程管理端 API 文档。
 - [学习进度](docs/learning/learning-progress.md)：课程学习记录。
+- [Day09 订单管理学习文档](docs/learning/day09-order-management.md)：订单生命周期、接口和配送范围校验。
 - [项目路线](docs/learning/project-roadmap.md)：课程阶段和后期扩展方向。
 
 ## 八、常见问题

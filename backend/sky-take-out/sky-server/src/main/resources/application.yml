@@ -51,5 +51,11 @@ sky:
   wechat:
     appid: ${sky.wechat.appid}
     secret: ${sky.wechat.secret}
+  shop:
+    address: ${CLOUD_TASTE_SHOP_ADDRESS:北京市海淀区上地十街10号}
+  baidu:
+    ak: ${BAIDU_MAP_AK:}
+  delivery-range:
+    enabled: ${CLOUD_TASTE_DELIVERY_RANGE_ENABLED:false}
 
 
