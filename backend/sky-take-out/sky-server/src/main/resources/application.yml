@@ -57,5 +57,8 @@ sky:
     ak: ${BAIDU_MAP_AK:}
   delivery-range:
     enabled: ${CLOUD_TASTE_DELIVERY_RANGE_ENABLED:false}
+  payment:
+    # WECHAT为真实微信支付，MOCK为本地模拟支付
+    mode: ${CLOUD_TASTE_PAYMENT_MODE:WECHAT}
 
 

@@ -148,6 +148,16 @@ backend\sky-take-out\sky-server\src\main\resources\application-local.yml
 
 这个文件已被 `.gitignore` 忽略。可以在本机填写数据库密码，但不要强制添加或上传。项目也支持 `CLOUD_TASTE_DB_PASSWORD` 等环境变量。
 
+本地支付模式也在此文件中配置：
+
+```yaml
+sky:
+  payment:
+    mode: MOCK
+```
+
+`MOCK` 表示本地模拟支付；以后商户号、证书和回调地址准备完成后，将这一行改为 `WECHAT` 即可恢复真实微信支付，不需要修改 Java 或小程序代码。后端每次启动时都会在控制台明确显示当前支付模式。
+
 提交前至少执行：
 
 ```powershell

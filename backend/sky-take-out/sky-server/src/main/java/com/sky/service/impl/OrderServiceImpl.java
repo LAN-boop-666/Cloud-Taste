@@ -26,6 +26,7 @@ import com.sky.mapper.OrderDetailMapper;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.ShoppingCartMapper;
 import com.sky.mapper.UserMapper;
+import com.sky.properties.PaymentProperties;
 import com.sky.result.PageResult;
 import com.sky.service.OrderService;
 import com.sky.utils.HttpClientUtil;
@@ -35,6 +36,7 @@ import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderVO;
 import com.sky.websocket.WebSocketServer;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +74,8 @@ public class OrderServiceImpl implements OrderService {
     private WeChatPayUtil weChatPayUtil;
     @Autowired
     private WebSocketServer webSocketServer;
+    @Autowired(required = false)
+    private PaymentProperties paymentProperties;
 
     @Value("${sky.shop.address}")
     private String shopAddress;
@@ -171,6 +175,22 @@ public class OrderServiceImpl implements OrderService {
         log.info("开始处理订单支付：orderNumber={}", ordersPaymentDTO.getOrderNumber());
         //获取当前登录用户的openid
         Long userId = BaseContext.getCurrentId();
+
+        if (paymentProperties != null && paymentProperties.isMock()) {
+            //本地学习阶段只跳过微信支付，支付成功后的订单状态和来单提醒仍正常执行
+            Orders order = orderMapper.getByNumber(ordersPaymentDTO.getOrderNumber());
+            if (order == null || !userId.equals(order.getUserId())) {
+                throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+            }
+            if (!Orders.PENDING_PAYMENT.equals(order.getStatus()) || Orders.PAID.equals(order.getPayStatus())) {
+                throw new OrderBusinessException("订单状态错误，不能重复支付");
+            }
+            log.warn("本地模拟支付开始：orderNumber={}, userId={}", ordersPaymentDTO.getOrderNumber(), userId);
+            paySuccess(ordersPaymentDTO.getOrderNumber());
+            log.warn("本地模拟支付完成：orderNumber={}", ordersPaymentDTO.getOrderNumber());
+            return OrderPaymentVO.builder().mockPayment(true).build();
+        }
+
         User user = userMapper.getById(userId);
         //调用微信支付接口，生成小程序调起支付所需参数
         JSONObject jsonObject = weChatPayUtil.pay(
@@ -418,6 +438,7 @@ public class OrderServiceImpl implements OrderService {
         log.info("订单已完成：orderId={}", order.getId());
     }
 
+
     private Orders getOrder(Long id) {
         //根据订单id查询订单，不存在时统一抛出业务异常
         Orders order = orderMapper.getById(id);
@@ -442,6 +463,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void refund(Orders order) throws Exception {
+        if (paymentProperties != null && paymentProperties.isMock()) {
+            //模拟支付没有真实资金交易，只保留后续退款状态流转
+            log.warn("本地模拟退款完成：orderNumber={}", order.getNumber());
+            return;
+        }
         //课程阶段沿用微信退款接口，真实退款需要商户号配置
         BigDecimal amount = order.getAmount() == null ? new BigDecimal("0.01") : order.getAmount();
         String result = weChatPayUtil.refund(order.getNumber(), order.getNumber(), amount, amount);
@@ -495,5 +521,24 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderBusinessException(message);
         }
         return result;
+    }
+    /**
+     * 订单催单
+     */
+    @Override
+    public void reminder(Long id) {
+        Orders order = orderMapper.getById(id);
+
+        if (order == null) {
+            throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        Map map = new HashMap();
+        map.put("type",2);//1表示来单提醒 2表示客户催单
+        map.put("orderId",order.getId());
+        map.put("content","订单号:"+order.getNumber());
+
+        String json = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(json);
     }
 }

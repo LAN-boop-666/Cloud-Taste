@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * 订单数据处理层
@@ -77,4 +78,23 @@ public interface OrderMapper {
      */
     @Select("select * from orders where status = #{status} and order_time <= #{orderTime}")
     List<Orders> getOrdersByStatusAndCreateTime(Integer status, LocalDateTime orderTime);
+
+    /**
+     * 营业额统计
+     *
+     * @param beginTime
+     * @param endTime
+     * @param status
+     * @return
+     */
+    @Select("select date(order_time) as day, sum(amount) as sumMoney " +
+            "from orders " +
+            "where order_time >= #{beginTime} and order_time <= #{endTime} and status = #{status} " +
+            "group by date(order_time)")
+    List<Map<String, Object>> getEveryDayTurnover(
+            @Param("beginTime") LocalDateTime beginTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("status") Integer status
+    );
+
 }
