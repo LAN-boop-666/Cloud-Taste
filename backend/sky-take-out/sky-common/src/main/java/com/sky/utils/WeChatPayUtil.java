@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.sky.properties.WeChatProperties;
 import com.wechat.pay.contrib.apache.httpclient.WechatPayHttpClientBuilder;
 import com.wechat.pay.contrib.apache.httpclient.util.PemUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -33,6 +34,7 @@ import java.util.List;
  * 微信支付工具类
  */
 @Component
+@Slf4j
 public class WeChatPayUtil {
 
     //微信支付下单接口地址
@@ -52,6 +54,7 @@ public class WeChatPayUtil {
     private CloseableHttpClient getClient() {
         PrivateKey merchantPrivateKey = null;
         try {
+            log.info("开始创建微信支付HTTP客户端");
             //merchantPrivateKey商户API私钥，如何加载商户API私钥请看常见问题
             merchantPrivateKey = PemUtil.loadPrivateKey(new FileInputStream(new File(weChatProperties.getPrivateKeyFilePath())));
             //加载平台证书文件
@@ -65,9 +68,10 @@ public class WeChatPayUtil {
 
             // 通过WechatPayHttpClientBuilder构造的HttpClient，会自动的处理签名和验签
             CloseableHttpClient httpClient = builder.build();
+            log.info("微信支付HTTP客户端创建完成");
             return httpClient;
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            log.error("微信支付证书或私钥文件不存在，请检查配置路径", e);
             return null;
         }
     }
@@ -80,6 +84,7 @@ public class WeChatPayUtil {
      * @return
      */
     private String post(String url, String body) throws Exception {
+        log.info("开始发送微信支付POST请求：url={}", url);
         CloseableHttpClient httpClient = getClient();
 
         HttpPost httpPost = new HttpPost(url);
@@ -91,6 +96,7 @@ public class WeChatPayUtil {
         CloseableHttpResponse response = httpClient.execute(httpPost);
         try {
             String bodyAsString = EntityUtils.toString(response.getEntity());
+            log.info("微信支付POST请求完成：status={}", response.getStatusLine().getStatusCode());
             return bodyAsString;
         } finally {
             httpClient.close();
@@ -105,6 +111,7 @@ public class WeChatPayUtil {
      * @return
      */
     private String get(String url) throws Exception {
+        log.info("开始发送微信支付GET请求：url={}", url);
         CloseableHttpClient httpClient = getClient();
 
         HttpGet httpGet = new HttpGet(url);
@@ -115,6 +122,7 @@ public class WeChatPayUtil {
         CloseableHttpResponse response = httpClient.execute(httpGet);
         try {
             String bodyAsString = EntityUtils.toString(response.getEntity());
+            log.info("微信支付GET请求完成：status={}", response.getStatusLine().getStatusCode());
             return bodyAsString;
         } finally {
             httpClient.close();
@@ -132,6 +140,8 @@ public class WeChatPayUtil {
      * @return
      */
     private String jsapi(String orderNum, BigDecimal total, String description, String openid) throws Exception {
+        log.info("开始调用微信支付JSAPI统一下单：orderNumber={}", orderNum);
+        //构造微信支付统一下单请求参数
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("appid", weChatProperties.getAppid());
         jsonObject.put("mchid", weChatProperties.getMchid());
@@ -164,14 +174,15 @@ public class WeChatPayUtil {
      * @return
      */
     public JSONObject pay(String orderNum, BigDecimal total, String description, String openid) throws Exception {
+        log.info("开始生成小程序支付参数：orderNumber={}", orderNum);
         //统一下单，生成预支付交易单
         String bodyAsString = jsapi(orderNum, total, description, openid);
         //解析返回结果
         JSONObject jsonObject = JSON.parseObject(bodyAsString);
-        System.out.println(jsonObject);
 
         String prepayId = jsonObject.getString("prepay_id");
         if (prepayId != null) {
+            log.info("微信支付预支付交易单生成成功：orderNumber={}", orderNum);
             String timeStamp = String.valueOf(System.currentTimeMillis() / 1000);
             String nonceStr = RandomStringUtils.randomNumeric(32);
             ArrayList<Object> list = new ArrayList<>();
@@ -200,8 +211,10 @@ public class WeChatPayUtil {
             jo.put("signType", "RSA");
             jo.put("paySign", packageSign);
 
+            log.info("小程序支付参数生成完成：orderNumber={}", orderNum);
             return jo;
         }
+        log.warn("微信支付预支付交易单生成失败：orderNumber={}, code={}", orderNum, jsonObject.getString("code"));
         return jsonObject;
     }
 
@@ -215,6 +228,8 @@ public class WeChatPayUtil {
      * @return
      */
     public String refund(String outTradeNo, String outRefundNo, BigDecimal refund, BigDecimal total) throws Exception {
+        log.info("开始申请微信退款：orderNumber={}, refundNumber={}", outTradeNo, outRefundNo);
+        //构造微信退款请求参数
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("out_trade_no", outTradeNo);
         jsonObject.put("out_refund_no", outRefundNo);
@@ -230,6 +245,8 @@ public class WeChatPayUtil {
         String body = jsonObject.toJSONString();
 
         //调用申请退款接口
-        return post(REFUNDS, body);
+        String result = post(REFUNDS, body);
+        log.info("微信退款申请已提交：orderNumber={}, refundNumber={}", outTradeNo, outRefundNo);
+        return result;
     }
 }

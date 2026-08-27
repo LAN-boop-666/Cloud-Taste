@@ -1,5 +1,6 @@
 package com.sky.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.Page;
@@ -33,6 +34,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +70,8 @@ public class OrderServiceImpl implements OrderService {
     private UserMapper userMapper;
     @Autowired
     private WeChatPayUtil weChatPayUtil;
+    @Autowired
+    private WebSocketServer webSocketServer;
 
     @Value("${sky.shop.address}")
     private String shopAddress;
@@ -155,31 +159,50 @@ public class OrderServiceImpl implements OrderService {
         return orderSubmitVO;
     }
 
+    /**
+     * 订单支付
+     *
+     * @param ordersPaymentDTO
+     * @return
+     * @throws Exception
+     */
     @Override
     public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
         log.info("开始处理订单支付：orderNumber={}", ordersPaymentDTO.getOrderNumber());
+        //获取当前登录用户的openid
         Long userId = BaseContext.getCurrentId();
         User user = userMapper.getById(userId);
+        //调用微信支付接口，生成小程序调起支付所需参数
         JSONObject jsonObject = weChatPayUtil.pay(
                 ordersPaymentDTO.getOrderNumber(),
                 new BigDecimal(0.01),
                 "苍穹外卖订单",
                 user.getOpenid()
         );
+        //微信支付返回ORDERPAID表示该订单已经支付
         if (jsonObject.getString("code") != null && jsonObject.getString("code").equals("ORDERPAID")) {
+            log.warn("订单已支付，无需重复支付：orderNumber={}", ordersPaymentDTO.getOrderNumber());
             throw new OrderBusinessException("该订单已支付");
         }
+        //封装支付参数并返回给小程序
         OrderPaymentVO vo = jsonObject.toJavaObject(OrderPaymentVO.class);
         vo.setPackageStr(jsonObject.getString("package"));
         log.info("订单支付预下单完成：orderNumber={}", ordersPaymentDTO.getOrderNumber());
         return vo;
     }
 
+    /**
+     * 支付成功，修改订单状态并发送来单提醒
+     *
+     * @param outTradeNo
+     */
     @Override
     @Transactional
     public void paySuccess(String outTradeNo) {
         log.info("收到支付成功通知：orderNumber={}", outTradeNo);
+        //根据订单号查询订单
         Orders ordersDB = orderMapper.getByNumber(outTradeNo);
+        //将订单修改为已支付、待接单状态
         Orders orders = Orders.builder()
                 .id(ordersDB.getId())
                 .status(Orders.TO_BE_CONFIRMED)
@@ -188,6 +211,16 @@ public class OrderServiceImpl implements OrderService {
                 .build();
         orderMapper.update(orders);
         log.info("订单支付状态更新完成：orderId={}, status={}", ordersDB.getId(), Orders.TO_BE_CONFIRMED);
+
+        //通过websocket向客户端浏览器推送消息 type orderId content
+        Map map = new HashMap();
+        map.put("type",1);//1表示来单提醒 2表示客户催单
+        map.put("orderId",ordersDB.getId());
+        map.put("content","订单号:"+outTradeNo);
+
+        String json = JSON.toJSONString(map);
+        webSocketServer.sendToAllClient(json);
+        log.info("来单提醒发送完成：orderId={}", ordersDB.getId());
     }
 
     @Override
