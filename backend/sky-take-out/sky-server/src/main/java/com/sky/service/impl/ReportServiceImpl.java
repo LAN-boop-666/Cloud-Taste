@@ -2,10 +2,11 @@ package com.sky.service.impl;
 
 import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
+import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
 import com.sky.vo.TurnoverReportVO;
+import com.sky.vo.UserReportVO;
 import org.apache.commons.lang.StringUtils;
-import org.apache.poi.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,9 @@ public class ReportServiceImpl implements ReportService {
 
     @Autowired
     private OrderMapper orderMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     /**
      * 营业额统计
@@ -61,9 +65,9 @@ public class ReportServiceImpl implements ReportService {
             // 2.处理金额：拿到BigDecimal，转为Double，同时处理null
             Object sumObj = map.get("sumMoney");
             Double money;
-            if(sumObj == null){
+            if (sumObj == null) {
                 money = 0.0;
-            }else{
+            } else {
                 BigDecimal bigDecimal = (BigDecimal) sumObj;
                 money = bigDecimal.doubleValue();
             }
@@ -90,5 +94,78 @@ public class ReportServiceImpl implements ReportService {
                 .turnoverList(turnoverListStr)
                 .build();
     }
+
+    /**
+     * 用户统计
+     *
+     * @param begin
+     * @param end
+     * @return
+     */
+    @Override
+    public UserReportVO getUserStatistics(LocalDate begin, LocalDate end) {
+        // 1.生成完整日期列表
+        List<LocalDate> dateList = new ArrayList<>();
+        LocalDate current = begin;
+        while (!current.isAfter(end)) {
+            dateList.add(current);
+            current = current.plusDays(1);
+        }
+        String dateListStr = StringUtils.join(dateList, ",");
+
+        // 2.时间转换
+        LocalDateTime beginTime = LocalDateTime.of(begin, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(end, LocalTime.MAX);
+
+        //3.查询【区间内每一天新增注册用户】 来自user表！不是orders表
+        List<Map<String, Object>> dayDataList = userMapper.getEveryDayNewUser(beginTime, endTime);
+
+        //4.封装map key:日期字符串 value:当日新增用户数
+        Map<String, Long> newUserMap = new HashMap<>();
+        for (Map<String, Object> map : dayDataList) {
+            java.sql.Date sqlDate = (java.sql.Date) map.get("day");
+            LocalDate day = sqlDate.toLocalDate();
+            Long newUser = (Long) map.get("new_user_count");
+            // 判断newUser是否为null，避免NPE，再put到map
+            newUserMap.put(day.toString(), newUser != null ? newUser : 0L);
+        }
+
+        List<Long> newUserList = new ArrayList<>();
+        List<Long> totalUserList = new ArrayList<>();
+
+        // 关键点：先查询【begin之前的总用户基数】：截止 begin前一天，一共多少注册用户
+        LocalDateTime beforeBegin = LocalDateTime.of(begin.minusDays(1), LocalTime.MAX);
+        // 查询截止 begin前一天的总用户数
+        long totalBase = userMapper.countUserBeforeDate(beforeBegin);
+        // 初始化当前总用户数为总用户基数
+        long currentTotal = totalBase;
+
+        //5.遍历完整日期，内存累加得到累计总用户
+        for (LocalDate date : dateList) {
+            //getOrDefault为当日新增用户数，默认值为0
+            Long dayNew = newUserMap.getOrDefault(date.toString(), 0L);
+            // 将当日新增用户数添加到列表
+            newUserList.add(dayNew);
+            // 累加当日新增用户数到当前总用户数
+            currentTotal = currentTotal + dayNew; // 累加
+            totalUserList.add(currentTotal);
+        }
+
+        //6.List转逗号字符串
+        String newUserListStr = newUserList.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+        String totalUserListStr = totalUserList.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(","));
+
+        //7.组装VO
+        return UserReportVO.builder()
+                .dateList(dateListStr)
+                .newUserList(newUserListStr)
+                .totalUserList(totalUserListStr)
+                .build();
+    }
+
 
 }
