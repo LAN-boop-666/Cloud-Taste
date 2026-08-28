@@ -97,4 +97,16 @@ public interface OrderMapper {
             @Param("status") Integer status
     );
 
+    /**
+     * 每天订单量统计
+     * @param beginTime
+     * @param endTime
+     * @return
+     */
+    @Select("select date(order_time) as day, count(id) as order_count, " +
+            "sum(case when status=5 then 1 else 0 end) as valid_order_count " +
+            "from orders " +
+            "where order_time >= #{beginTime} and order_time <= #{endTime} " +
+            "group by date(order_time)")
+    List<Map<String, Object>> getEveryDayOrderCount(LocalDateTime beginTime, LocalDateTime endTime);
 }

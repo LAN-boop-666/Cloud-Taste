@@ -4,6 +4,7 @@ import com.sky.entity.Orders;
 import com.sky.mapper.OrderMapper;
 import com.sky.mapper.UserMapper;
 import com.sky.service.ReportService;
+import com.sky.vo.OrderReportVO;
 import com.sky.vo.TurnoverReportVO;
 import com.sky.vo.UserReportVO;
 import org.apache.commons.lang.StringUtils;
@@ -18,10 +19,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 @Service
 public class ReportServiceImpl implements ReportService {
+
+    /** 日期填充用的零值常量，避免循环中反复 new */
+    private static final long[] ZERO_COUNTS = {0L, 0L};
 
     @Autowired
     private OrderMapper orderMapper;
@@ -167,5 +172,79 @@ public class ReportServiceImpl implements ReportService {
                 .build();
     }
 
+    /**
+     * 订单统计
+     *
+     * @param begin
+     * @param end
+     * @return
+     */
+    @Override
+    public OrderReportVO getOrdersStatistics(LocalDate begin, LocalDate end) {
+        // 1.生成完整日期列表
+        List<LocalDate> dateList = new ArrayList<>();
+        LocalDate current = begin;
+        while (!current.isAfter(end)) {
+            dateList.add(current);
+            current = current.plusDays(1);
+        }
+        String dateListStr = StringUtils.join(dateList, ",");
+
+        // 2.时间转换
+        LocalDateTime beginTime = LocalDateTime.of(begin, LocalTime.MIN);
+        LocalDateTime endTime = LocalDateTime.of(end, LocalTime.MAX);
+
+        // 3.查询每天的订单总数和有效订单数
+        List<Map<String, Object>> dayDataList = orderMapper.getEveryDayOrderCount(beginTime, endTime);
+
+        // 4.封装map key:日期字符串 value:[当日订单总数,有效订单数]
+        Map<String, long[]> orderCountMap = new HashMap<>();
+        for (Map<String, Object> map : dayDataList) {
+            // 1.处理日期：sql.Date → LocalDate
+            java.sql.Date sqlDate = (java.sql.Date) map.get("day");
+            LocalDate day = sqlDate.toLocalDate();
+            // count/sum可能返回Long或BigDecimal，统一用Number转换
+            Number orderCountNum = (Number) map.get("order_count");
+            Number validOrderCountNum = (Number) map.get("valid_order_count");
+
+            long oc = orderCountNum != null ? orderCountNum.longValue() : 0L;
+            long voc = validOrderCountNum != null ? validOrderCountNum.longValue() : 0L;
+            orderCountMap.put(day.toString(), new long[]{oc, voc});
+        }
+
+        // 5.单次遍历完整日期列表：补0、构建逗号字符串、累加总数
+        StringJoiner orderJoiner = new StringJoiner(",");
+        StringJoiner validOrderJoiner = new StringJoiner(",");
+        long totalOrderCount = 0;
+        long totalValidOrderCount = 0;
+
+        for (LocalDate date : dateList) {
+            long[] counts = orderCountMap.getOrDefault(date.toString(), ZERO_COUNTS);
+            long oc = counts[0];
+            long voc = counts[1];
+
+            orderJoiner.add(String.valueOf(oc));
+            validOrderJoiner.add(String.valueOf(voc));
+            totalOrderCount += oc;
+            totalValidOrderCount += voc;
+        }
+
+        // 6.计算完成率（除零保护）
+        double completionRate = totalOrderCount == 0
+                ? 0.0
+                : (double) totalValidOrderCount / totalOrderCount;
+
+        // 7.组装VO并返回
+        return OrderReportVO.builder()
+                .dateList(dateListStr)
+                .orderCountList(orderJoiner.toString())
+                .validOrderCountList(validOrderJoiner.toString())
+                .totalOrderCount((int) totalOrderCount)
+                .validOrderCount((int) totalValidOrderCount)
+                .orderCompletionRate(completionRate)
+                .build();
+    }
 
 }
+
+
