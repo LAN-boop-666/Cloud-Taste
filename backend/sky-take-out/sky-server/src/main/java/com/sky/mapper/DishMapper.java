@@ -12,9 +12,18 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface DishMapper {
+
+    /**
+     * 根据条件统计菜品数量，供工作台总览使用。
+     *
+     * @param map 查询条件
+     * @return 菜品数量
+     */
+    Integer countByMap(Map map);
 
     /**
      * 根据分类id查询菜品数量

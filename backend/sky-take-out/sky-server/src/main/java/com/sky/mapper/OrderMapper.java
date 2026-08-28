@@ -1,5 +1,6 @@
 package com.sky.mapper;
 
+import com.sky.dto.GoodsSalesDTO;
 import com.sky.entity.Orders;
 import com.github.pagehelper.Page;
 import com.sky.dto.OrdersPageQueryDTO;
@@ -16,6 +17,22 @@ import java.util.Map;
  */
 @Mapper
 public interface OrderMapper {
+
+    /**
+     * 根据动态条件统计订单数量，供工作台使用。
+     *
+     * @param map 查询条件
+     * @return 订单数量
+     */
+    Integer countByMap(Map map);
+
+    /**
+     * 根据动态条件统计营业额，供工作台使用。
+     *
+     * @param map 查询条件
+     * @return 营业额
+     */
+    Double sumByMap(Map map);
 
     /**
      * 插入订单数据
@@ -109,4 +126,20 @@ public interface OrderMapper {
             "where order_time >= #{beginTime} and order_time <= #{endTime} " +
             "group by date(order_time)")
     List<Map<String, Object>> getEveryDayOrderCount(LocalDateTime beginTime, LocalDateTime endTime);
+
+    /**
+     * 统计全部商品销量排名
+     *
+     * @param beginTime
+     * @param endTime
+     * @return
+     */
+    @Select("select od.name as name, sum(od.number) as number " +
+            "from orders o , order_detail od  " +
+            "where o.id = od.order_id " +
+            "and o.status = 5 " +
+            "and o.order_time >= #{beginTime} and o.order_time <= #{endTime} " +
+            "group by od.name " +
+            "order by number desc " )
+    List<GoodsSalesDTO> getSalesTop10(LocalDateTime beginTime, LocalDateTime endTime);
 }

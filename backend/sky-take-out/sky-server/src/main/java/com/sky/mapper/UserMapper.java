@@ -12,6 +12,14 @@ import java.util.Map;
 @Mapper
 public interface UserMapper {
 
+    /**
+     * 根据动态条件统计新增用户数量，供工作台使用。
+     *
+     * @param map 查询条件
+     * @return 用户数量
+     */
+    Integer countByMap(Map map);
+
 
     /**
      * 根据openid查询用户

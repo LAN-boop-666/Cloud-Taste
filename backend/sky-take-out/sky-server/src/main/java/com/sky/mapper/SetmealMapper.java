@@ -12,9 +12,18 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface SetmealMapper {
+
+    /**
+     * 根据条件统计套餐数量，供工作台总览使用。
+     *
+     * @param map 查询条件
+     * @return 套餐数量
+     */
+    Integer countByMap(Map map);
 
     /**
      * 按条件查询套餐，供用户端浏览。

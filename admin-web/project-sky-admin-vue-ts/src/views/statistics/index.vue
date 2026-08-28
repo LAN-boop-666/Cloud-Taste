@@ -15,7 +15,7 @@
       <!-- 订单统计 -->
       <OrderStatistics :orderdata="orderData" :overviewData="overviewData" />
       <!-- end -->
-      <!-- 销量排名TOP10 -->
+      <!-- 商品销量排名 -->
       <Top :top10data="top10Data" />
       <!-- end -->
     </div>
