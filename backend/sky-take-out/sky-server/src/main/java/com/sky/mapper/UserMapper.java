@@ -3,6 +3,7 @@ package com.sky.mapper;
 import com.sky.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
@@ -46,12 +47,13 @@ public interface UserMapper {
             "from user " +
             "where create_time >= #{beginTime} and create_time <= #{endTime} " +
             "group by date(create_time)")
-    List<Map<String, Object>> getEveryDayNewUser(LocalDateTime beginTime, LocalDateTime endTime);
+    List<Map<String, Object>> getEveryDayNewUser(@Param("beginTime") LocalDateTime beginTime,
+                                                 @Param("endTime") LocalDateTime endTime);
 
 
     /**
      * 查询指定时间之前注册的用户数量
      */
     @Select("select count(*) from user where create_time < #{beforeBegin}")
-    long countUserBeforeDate(LocalDateTime beforeBegin);
+    long countUserBeforeDate(@Param("beforeBegin") LocalDateTime beforeBegin);
 }

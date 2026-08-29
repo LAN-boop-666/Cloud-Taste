@@ -16,6 +16,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class BusinessDataVO implements Serializable {
 
+    private String dateStr;//日期
+
     private Double turnover;//营业额
 
     private Integer validOrderCount;//有效订单数

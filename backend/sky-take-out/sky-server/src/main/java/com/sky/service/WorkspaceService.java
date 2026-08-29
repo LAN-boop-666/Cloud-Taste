@@ -6,6 +6,7 @@ import com.sky.vo.OrderOverViewVO;
 import com.sky.vo.SetmealOverViewVO;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 工作台业务层。
@@ -41,4 +42,13 @@ public interface WorkspaceService {
      * @return 套餐概览
      */
     SetmealOverViewVO getSetmealOverView();
+
+    /**
+     * 根据时间段统计每日营业数据列表。
+     *
+     * @param beginTime 开始时间
+     * @param endTime 结束时间
+     * @return 每日营业数据列表
+     */
+    List<BusinessDataVO> getBusinessDataList(LocalDateTime beginTime, LocalDateTime endTime);
 }

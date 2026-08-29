@@ -15,9 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -76,6 +79,54 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 .unitPrice(unitPrice)
                 .newUsers(newUsers)
                 .build();
+    }
+
+    /**
+     * 根据时间段统计每日营业数据列表。
+     *
+     * @param beginTime 开始时间
+     * @param endTime 结束时间
+     * @return 每日营业数据列表
+     */
+    @Override
+    public List<BusinessDataVO> getBusinessDataList(LocalDateTime beginTime, LocalDateTime endTime) {
+        List<BusinessDataVO> businessDataList = new ArrayList<>();
+        LocalDate beginDate = beginTime.toLocalDate();
+        LocalDate endDate = endTime.toLocalDate();
+
+        for (LocalDate currentDate = beginDate; !currentDate.isAfter(endDate); currentDate = currentDate.plusDays(1)) {
+            LocalDateTime dayBegin = LocalDateTime.of(currentDate, LocalTime.MIN);
+            LocalDateTime dayEnd = LocalDateTime.of(currentDate, LocalTime.MAX);
+
+            Map map = new HashMap();
+            map.put("begin", dayBegin);
+            map.put("end", dayEnd);
+
+            Integer totalOrderCount = orderMapper.countByMap(map);
+            map.put("status", Orders.COMPLETED);
+            Double turnover = orderMapper.sumByMap(map);
+            turnover = turnover == null ? 0.0 : turnover;
+            Integer validOrderCount = orderMapper.countByMap(map);
+            Integer newUsers = userMapper.countByMap(map);
+
+            double orderCompletionRate = totalOrderCount == null || totalOrderCount == 0
+                    ? 0.0
+                    : validOrderCount.doubleValue() / totalOrderCount;
+            double unitPrice = validOrderCount == null || validOrderCount == 0
+                    ? 0.0
+                    : turnover / validOrderCount;
+
+            businessDataList.add(BusinessDataVO.builder()
+                    .dateStr(currentDate.toString())
+                    .turnover(turnover)
+                    .validOrderCount(validOrderCount)
+                    .orderCompletionRate(orderCompletionRate)
+                    .unitPrice(unitPrice)
+                    .newUsers(newUsers)
+                    .build());
+        }
+
+        return businessDataList;
     }
 
     /**

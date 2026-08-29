@@ -125,7 +125,8 @@ public interface OrderMapper {
             "from orders " +
             "where order_time >= #{beginTime} and order_time <= #{endTime} " +
             "group by date(order_time)")
-    List<Map<String, Object>> getEveryDayOrderCount(LocalDateTime beginTime, LocalDateTime endTime);
+    List<Map<String, Object>> getEveryDayOrderCount(@Param("beginTime") LocalDateTime beginTime,
+                                                     @Param("endTime") LocalDateTime endTime);
 
     /**
      * 统计全部商品销量排名
@@ -141,5 +142,6 @@ public interface OrderMapper {
             "and o.order_time >= #{beginTime} and o.order_time <= #{endTime} " +
             "group by od.name " +
             "order by number desc " )
-    List<GoodsSalesDTO> getSalesTop10(LocalDateTime beginTime, LocalDateTime endTime);
+    List<GoodsSalesDTO> getSalesTop10(@Param("beginTime") LocalDateTime beginTime,
+                                      @Param("endTime") LocalDateTime endTime);
 }
