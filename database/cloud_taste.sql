@@ -153,7 +153,8 @@ CREATE TABLE `order_detail` (
   `dish_flavor` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '口味',
   `number` int NOT NULL DEFAULT '1' COMMENT '数量',
   `amount` decimal(10,2) NOT NULL COMMENT '金额',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_order_detail_order_id` (`order_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='订单明细表';
 
 DROP TABLE IF EXISTS `orders`;
@@ -182,7 +183,10 @@ CREATE TABLE `orders` (
   `pack_amount` int DEFAULT NULL COMMENT '打包费',
   `tableware_number` int DEFAULT NULL COMMENT '餐具数量',
   `tableware_status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '餐具数量状态  1按餐量提供  0选择具体数量',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_orders_number` (`number`),
+  KEY `idx_orders_user_status_time` (`user_id`, `status`, `order_time`),
+  KEY `idx_orders_status_time` (`status`, `order_time`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='订单表';
 
 DROP TABLE IF EXISTS `setmeal`;
@@ -225,7 +229,8 @@ CREATE TABLE `shopping_cart` (
   `number` int NOT NULL DEFAULT '1' COMMENT '数量',
   `amount` decimal(10,2) NOT NULL COMMENT '金额',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_shopping_cart_user_id` (`user_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='购物车';
 
 DROP TABLE IF EXISTS `user`;

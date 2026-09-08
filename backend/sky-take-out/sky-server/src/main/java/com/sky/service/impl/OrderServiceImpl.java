@@ -48,9 +48,11 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -118,7 +120,8 @@ public class OrderServiceImpl implements OrderService {
         orders.setOrderTime(LocalDateTime.now());
         orders.setPayStatus(Orders.UN_PAID);
         orders.setStatus(Orders.PENDING_PAYMENT);
-        orders.setNumber(String.valueOf(System.currentTimeMillis()));
+        //使用UUID生成订单号，避免并发下单时同一毫秒生成重复订单号
+        orders.setNumber(UUID.randomUUID().toString().replace("-", ""));
         orders.setPhone(addressBook.getPhone());
         orders.setConsignee(addressBook.getConsignee());
         orders.setUserId(currentId);
@@ -253,7 +256,7 @@ public class OrderServiceImpl implements OrderService {
         Page<Orders> page = orderMapper.pageQuery(query);
         log.info("用户历史订单查询完成：userId={}, status={}, total={}", query.getUserId(), status, page.getTotal());
         //查询订单明细并组装用户端返回对象
-        List<OrderVO> records = page.getResult().stream().map(this::toOrderVO).collect(Collectors.toList());
+        List<OrderVO> records = toOrderVOList(page.getResult());
         return new PageResult(page.getTotal(), records);
     }
 
@@ -335,7 +338,7 @@ public class OrderServiceImpl implements OrderService {
         Page<Orders> page = orderMapper.pageQuery(query);
         log.info("商家订单搜索完成：total={}", page.getTotal());
         //组装订单明细和菜品展示字符串
-        List<OrderVO> records = page.getResult().stream().map(this::toOrderVO).collect(Collectors.toList());
+        List<OrderVO> records = toOrderVOList(page.getResult());
         return new PageResult(page.getTotal(), records);
     }
 
@@ -450,9 +453,41 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderVO toOrderVO(Orders order) {
         //将订单主表和订单明细组装成前端需要的 OrderVO
+        List<OrderDetail> details = orderDetailMapper.getByOrderId(order.getId());
+        return toOrderVO(order, details);
+    }
+
+    /**
+     * 分页查询订单时批量查询订单明细，避免每个订单单独访问一次数据库
+     * @param orders
+     * @return
+     */
+    private List<OrderVO> toOrderVOList(List<Orders> orders) {
+        if (orders == null || orders.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Long> orderIds = orders.stream().map(Orders::getId).collect(Collectors.toList());
+        List<OrderDetail> details = orderDetailMapper.getByOrderIds(orderIds);
+        Map<Long, List<OrderDetail>> detailsMap = details == null
+                ? Collections.emptyMap()
+                : details.stream().collect(Collectors.groupingBy(OrderDetail::getOrderId));
+        log.info("批量查询订单明细完成：orderCount={}, detailCount={}", orderIds.size(), details == null ? 0 : details.size());
+
+        return orders.stream()
+                .map(order -> toOrderVO(order, detailsMap.getOrDefault(order.getId(), Collections.emptyList())))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 根据订单和订单明细组装前端需要的订单对象
+     * @param order
+     * @param details
+     * @return
+     */
+    private OrderVO toOrderVO(Orders order, List<OrderDetail> details) {
         OrderVO orderVO = new OrderVO();
         BeanUtils.copyProperties(order, orderVO);
-        List<OrderDetail> details = orderDetailMapper.getByOrderId(order.getId());
         orderVO.setOrderDetailList(details);
         if (details != null) {
             orderVO.setOrderDishes(details.stream()
